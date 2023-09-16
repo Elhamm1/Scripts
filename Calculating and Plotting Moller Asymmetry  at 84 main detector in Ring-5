@@ -1,0 +1,134 @@
+#Run using: /home/elhamm/projects/def-wdconinc/elhamm/PionDetectorOptimization/simulation/run/remoll-Updated-July2023/run/remoll/build/reroot -l -q 'Moller_Asymmetry_MainDet_Chuncking.C("moller.root")'
+
+void Moller_Asymmetry_MainDet(const TString& files) {
+  TChain* T = new TChain("T");
+  T->Add(files);
+  Double_t pi = 3.14159265358979323846;  
+  Double_t rate = 0;
+  std::vector<remollEventParticle_t>* parts = 0;
+  std::vector<remollGenericDetectorHit_t>* hits = 0;
+  remollEvent_t* ev=0;
+
+  T->SetBranchAddress("rate", &rate);
+  T->SetBranchAddress("hit", &hits);
+  T->SetBranchAddress("part", &parts);
+  T->SetBranchAddress("ev", &ev);
+
+  TH1F* asym_longitudinal_b_hist[15];
+  TH1F* asym_longitudinal_f_hist[15];
+  TH1F* asym_transverse_vertical_b_hist[15];
+  TH1F* asym_transverse_vertical_f_hist[15];
+  TH1F* asym_transverse_horizental_b_hist[15];
+  TH1F* asym_transverse_horizental_f_hist[15];
+
+  for (Int_t j = 0; j < 3; j++) {
+    for (Int_t i = 0; i < 14; i++) {
+    asym_longitudinal_b_hist[i+1] = new TH1F(Form("asym_azimuthal_b%d%d",i+1,j+1), Form("asym_azimuthal_b%d%d",i+1,j+1),90,-45,0);
+    asym_longitudinal_f_hist[i+1] = new TH1F(Form("asym_azimuthal_f%d%d",i+1,j+1), Form("asym_azimuthal_f%d%d",i+1,j+1),90,-45,0);
+    asym_transverse_vertical_b_hist[i+1] = new TH1F(Form("asym_transverse_vertical_b%d%d",i+1,j+1), Form("asym_transverse_vertical_b%d%d",i+1,j+1),800,-20000,20000);
+    asym_transverse_vertical_f_hist[i+1] = new TH1F(Form("asym_transverse_vertical_f%d%d",i+1,j+1), Form("asym_transverse_vertical_f%d%d",i+1,j+1),800,-20000,20000);
+    asym_transverse_horizental_b_hist[i+1] = new TH1F(Form("asym_transverse_horizental_b%d%d",i+1,j+1), Form("asym_transverse_horizental_b%d%d",i+1,j+1),800,-20000,20000);
+    asym_transverse_horizental_f_hist[i+1] = new TH1F(Form("asym_transverse_horizental_f%d%d",i+1,j+1), Form("asym_transverse_horizental_f%d%d",i+1,j+1),800,-20000,20000);
+
+      double mean_longitudinal_b[14] = {0};
+      double mean_longitudinal_f[14] = {0};
+      double std_dev_longitudinal_b[14] = {0};
+      double std_dev_longitudinal_f[14] = {0};
+      double mean_transverse_vertical_b[14] = {0};
+      double mean_transverse_vertical_f[14] = {0};
+      double mean_transverse_horizental_b[14] = {0};
+      double mean_transverse_horizental_f[14] = {0};
+      double std_dev_transverse_vertical_b[14] = {0};
+      double std_dev_transverse_vertical_f[14] = {0};
+      double std_dev_transverse_horizental_b[14] = {0};
+      double std_dev_transverse_horizental_f[14] = {0};
+ 
+      Int_t entries_longitudinal_b[14] = {0};
+      Int_t entries_transverse_vertical_b[14] = {0};
+      Int_t entries_transverse_horizental_b[14] = {0};
+      Int_t entries_longitudinal_f[14] = {0};
+      Int_t entries_transverse_vertical_f[14] = {0};
+      Int_t entries_transverse_horizental_f[14] = {0};
+
+      for (size_t iev = 0; iev < T->GetEntries(); iev++) {
+        T->GetEntry(iev);
+
+          double asym_longitudinal = ev->A;
+          double asym_transverse_vertical = ev->ATV;
+          double asym_transverse_horizental = ev->ATH;
+
+          for (size_t ihit = 0; ihit < hits->size(); ihit++) {
+            remollGenericDetectorHit_t hit = hits->at(ihit);
+
+            if (hit.det==(150000 + (i+1) * 100 + 50 + (j+1))) {
+              asym_longitudinal_b_hist[i+1]->Fill(asym_longitudinal, rate);
+              asym_transverse_vertical_b_hist[i+1]->Fill(asym_transverse_vertical, rate);
+              asym_transverse_horizental_b_hist[i+1]->Fill(asym_transverse_horizental, rate);
+            }
+            if (hit.det==(110000 + (i+1) * 100 + 50 + (j+1))) {
+              asym_longitudinal_f_hist[i+1]->Fill(asym_longitudinal, rate);
+              asym_transverse_vertical_f_hist[i+1]->Fill(asym_transverse_vertical, rate);
+              asym_transverse_horizental_f_hist[i+1]->Fill(asym_transverse_horizental, rate);
+            }
+          }
+	}
+
+	mean_longitudinal_b[i+1] = asym_longitudinal_b_hist[i+1]->GetMean();
+        mean_transverse_vertical_b[i+1] = asym_transverse_vertical_b_hist[i+1]->GetMean();
+        mean_transverse_horizental_b[i+1] = asym_transverse_horizental_b_hist[i+1]->GetMean();
+        std_dev_longitudinal_b[i+1] = asym_longitudinal_b_hist[i+1]->GetStdDev();
+        std_dev_transverse_vertical_b[i+1] = asym_transverse_vertical_b_hist[i+1]->GetStdDev();
+        std_dev_transverse_horizental_b[i+1] = asym_transverse_horizental_b_hist[i+1]->GetStdDev();
+        entries_longitudinal_b[i+1] = asym_longitudinal_b_hist[i+1]->GetEntries();
+        entries_transverse_vertical_b[i+1] = asym_transverse_vertical_b_hist[i+1]->GetEntries();
+        entries_transverse_horizental_b[i+1] = asym_transverse_horizental_b_hist[i+1]->GetEntries();
+
+        mean_longitudinal_f[i+1] = asym_longitudinal_f_hist[i+1]->GetMean();
+        mean_transverse_vertical_f[i+1] = asym_transverse_vertical_f_hist[i+1]->GetMean();
+        mean_transverse_horizental_f[i+1] = asym_transverse_horizental_f_hist[i+1]->GetMean();
+        std_dev_longitudinal_f[i+1] = asym_longitudinal_f_hist[i+1]->GetStdDev();
+        std_dev_transverse_vertical_f[i+1] = asym_transverse_vertical_f_hist[i+1]->GetStdDev();
+        std_dev_transverse_horizental_f[i+1] = asym_transverse_horizental_f_hist[i+1]->GetStdDev();
+        entries_longitudinal_f[i+1] = asym_longitudinal_f_hist[i+1]->GetEntries();
+        entries_transverse_vertical_f[i+1] = asym_transverse_vertical_f_hist[i+1]->GetEntries();
+        entries_transverse_horizental_f[i+1] = asym_transverse_horizental_f_hist[i+1]->GetEntries();
+
+
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << ": mean_longitudinal_b = " << mean_longitudinal_b[i+1] << "+/-" << std_dev_longitudinal_b[i+1]/sqrt(entries_longitudinal_b[i+1]) << endl; 
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << ": mean_transverse_vertical_b =" << mean_transverse_vertical_b[i+1]  << " +/-" << std_dev_transverse_vertical_b[i+1]/sqrt(entries_transverse_vertical_b[i+1]) << endl; 
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << ": mean_transverse_horizental_b =" << mean_transverse_horizental_b[i+1] << " +/-" << std_dev_transverse_horizental_b[i+1]/sqrt(entries_transverse_horizental_b[i+1]) << endl;
+
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << (2*(i+1)) << ", and DetNo=" << 110000 + (i+1) * 100 + 50 + (j+1) << ": mean_longitudinal_f =" << mean_longitudinal_f[i+1] << "+/-" << std_dev_longitudinal_f[i+1]/sqrt(entries_longitudinal_f[i+1]) << endl; 
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << (2*(i+1)) << ", and DetNo=" << 110000 + (i+1) * 100 + 50 + (j+1) << ": mean_transverse_vertical_f =" << mean_transverse_vertical_f[i+1]  << " +/-" << std_dev_transverse_vertical_f[i+1]/sqrt(entries_transverse_vertical_f[i+1]) << endl; 
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << (2*(i+1)) << ", and DetNo=" << 110000 + (i+1) * 100 + 50 + (j+1) << ": mean_transverse_horizental_f =" << mean_transverse_horizental_f[i+1] << " +/-" << std_dev_transverse_horizental_f[i+1]/sqrt(entries_transverse_horizental_f[i+1]) << endl;
+
+       // Drawing and saving the histograms
+
+       // Create a canvas to hold all 6 histograms
+        TCanvas c("canvas","canvas",1350,750);  // Adjust the size 
+        c.Divide(3, 2); // Divide canvas into 3 columns and 2 rows
+
+       // Draw histograms on divided canvas
+       c.cd(1);
+       asym_longitudinal_b_hist[i+1]->Draw();
+
+       c.cd(2);
+       asym_transverse_vertical_b_hist[i+1]->Draw();
+
+       c.cd(3);
+       asym_transverse_horizental_b_hist[i+1]->Draw();
+
+       c.cd(4);
+       asym_longitudinal_f_hist[i+1]->Draw();
+
+       c.cd(5);
+       asym_transverse_vertical_f_hist[i+1]->Draw();
+
+       c.cd(6);
+       asym_transverse_horizental_f_hist[i+1]->Draw();
+
+       // Save combined canvas to file
+       c.SaveAs(Form("/home/elhamm/projects/def-wdconinc/elhamm/PionDetectorOptimization/simulation/run/remoll-Updated-July2023/scratch/plots_%d%d.png", i+1, j+1));
+    }
+  }
+}
