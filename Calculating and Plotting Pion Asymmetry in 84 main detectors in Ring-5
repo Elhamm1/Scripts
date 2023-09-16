@@ -1,0 +1,181 @@
+#Run using:/home/elhamm/projects/def-wdconinc/elhamm/PionDetectorOptimization/simulation/run/remoll-Updated-July2023/run/remoll/build/reroot -l -q 'Pion_Asymmetry_MainDet_Chunking.C("pion.root")'
+
+void Pion_Asymmetry_MainDet_Chunking(const TString& files) {
+  TChain* T = new TChain("T");
+  T->Add(files);
+  Double_t pi = 3.14159265358979323846;
+  Double_t rate = 0;
+  std::vector<remollEventParticle_t>* parts = 0;
+  std::vector<remollGenericDetectorHit_t>* hits = 0;
+  std::vector<double> means_longitudinal_b;
+  std::vector<double> means_longitudinal_f;
+  std::vector<double> means_transverse_vertical_b;
+  std::vector<double> means_transverse_vertical_f;
+  std::vector<double> means_transverse_horizental_b;
+  std::vector<double> means_transverse_horizental_f;
+  remollEvent_t* ev=0;
+
+  T->SetBranchAddress("rate", &rate);
+  T->SetBranchAddress("hit", &hits);
+  T->SetBranchAddress("part", &parts);
+  T->SetBranchAddress("ev", &ev);
+
+  TH1F* asym_longitudinal_b_hist[11];
+  TH1F* asym_longitudinal_f_hist[11];
+  TH1F* asym_transverse_vertical_b_hist[11];
+  TH1F* asym_transverse_vertical_f_hist[11];
+  TH1F* asym_transverse_horizental_b_hist[11];
+  TH1F* asym_transverse_horizental_f_hist[11];
+
+  for (Int_t j = 0; j < 3; j++) {
+   for (Int_t i = 0; i < 14; i++) {
+
+    means_longitudinal_b.clear(); // Clear the vector at the start of each new phi iteration
+    means_longitudinal_f.clear();
+    means_transverse_vertical_b.clear();
+    means_transverse_vertical_f.clear();
+    means_transverse_horizental_b.clear();
+    means_transverse_horizental_f.clear();
+
+    double mean_longitudinal_b_final = 0.0;
+    double standard_deviation_longitudinal_b = 0.0;
+    double mean_longitudinal_f_final = 0.0;
+    double standard_deviation_longitudinal_f = 0.0;
+    double mean_transverse_vertical_b_final = 0.0;
+    double standard_deviation_transverse_vertical_b = 0.0;
+    double mean_transverse_vertical_f_final = 0.0;
+    double standard_deviation_transverse_vertical_f = 0.0;
+    double mean_transverse_horizental_b_final = 0.0;
+    double standard_deviation_transverse_horizental_b = 0.0;
+    double mean_transverse_horizental_f_final = 0.0;
+    double standard_deviation_transverse_horizental_f = 0.0;
+
+    for (size_t k = 0; k < 10; k++) {
+    asym_longitudinal_b_hist[k] = new TH1F(Form("asym_longitudinal_b_%zu_%d_%d", k, i, j), Form("asym_longitudinal_b_%zu_%d_%d", k, i, j), 400, 16000, 36000);
+    asym_longitudinal_b_hist[k]->Sumw2();
+
+    asym_longitudinal_f_hist[k] = new TH1F(Form("asym_azimuthal_f_%zu_%d_%d", k, i, j), Form("asym_azimuthal_f_%zu_%d_%d", k, i, j),400,16000,36000);
+    asym_longitudinal_f_hist[k]->Sumw2();
+
+    asym_transverse_vertical_b_hist[k] = new TH1F(Form("asym_transverse_vertical_b_%zu_%d_%d", k, i, j), Form("asym_transverse_vertical_b_%zu_%d_%d", k, i, j),3200,-80000,80000);
+    asym_transverse_vertical_b_hist[k]->Sumw2();
+
+    asym_transverse_vertical_f_hist[k] = new TH1F(Form("asym_transverse_vertical_f_%zu_%d_%d", k, i, j), Form("asym_transverse_vertical_f_%zu_%d_%d", k, i, j),3200,-80000,80000);
+    asym_transverse_vertical_f_hist[k]->Sumw2();
+
+    asym_transverse_horizental_b_hist[k] = new TH1F(Form("asym_transverse_horizental_b_%zu_%d_%d", k, i, j), Form("asym_transverse_horizental_b_%zu_%d_%d", k, i, j),3200,-80000,80000);
+    asym_transverse_horizental_b_hist[k]->Sumw2();
+
+    asym_transverse_horizental_f_hist[k] = new TH1F(Form("asym_transverse_horizental_f_%zu_%d_%d", k, i, j), Form("asym_transverse_horizental_f_%zu_%d_%d", k, i, j),3200,-80000,80000);
+    asym_transverse_horizental_f_hist[k]->Sumw2();
+
+
+      for (size_t iev = 0; iev <= T->GetEntries(); iev++) {
+       if (iev % 10 != k) continue;
+       T->GetEntry(iev);
+
+          double asym_longitudinal = ev->A;
+          double asym_transverse_vertical = ev->ATV;
+          double asym_transverse_horizental = ev->ATH;
+
+          for (size_t ihit = 0; ihit < hits->size(); ihit++) {
+            remollGenericDetectorHit_t hit = hits->at(ihit);
+
+            if (hit.det==(150000 + (i+1) * 100 + 50 + (j+1))) {
+              asym_longitudinal_b_hist[k]->Fill(asym_longitudinal, rate);
+              asym_transverse_vertical_b_hist[k]->Fill(asym_transverse_vertical, rate);
+              asym_transverse_horizental_b_hist[k]->Fill(asym_transverse_horizental, rate);
+            }
+            if (hit.det==(110000 + (i+1) * 100 + 50 + (j+1))) {
+              asym_longitudinal_f_hist[k]->Fill(asym_longitudinal, rate);
+              asym_transverse_vertical_f_hist[k]->Fill(asym_transverse_vertical, rate);
+              asym_transverse_horizental_f_hist[k]->Fill(asym_transverse_horizental, rate);
+            }
+          }
+	}
+
+	double  mean_longitudinal_b = asym_longitudinal_b_hist[k]->GetMean();
+        double  mean_transverse_vertical_b = asym_transverse_vertical_b_hist[k]->GetMean();
+        double  mean_transverse_horizental_b = asym_transverse_horizental_b_hist[k]->GetMean();
+
+        double  mean_longitudinal_f = asym_longitudinal_f_hist[k]->GetMean();
+        double  mean_transverse_vertical_f = asym_transverse_vertical_f_hist[k]->GetMean();
+        double  mean_transverse_horizental_f = asym_transverse_horizental_f_hist[k]->GetMean();
+
+        means_longitudinal_b.push_back(mean_longitudinal_b);
+//        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << " mean_longitudinal_b = " << mean_longitudinal_b << endl;
+        means_longitudinal_f.push_back(mean_longitudinal_f);
+//        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << (2*(i+1)) << ", and DetNo=" << 110000 + (i+1) * 100 + 50 + (j+1) << " mean_longitudinal_f = " << mean_longitudinal_f << endl;
+        means_transverse_vertical_b.push_back(mean_transverse_vertical_b);
+//        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << " mean_transverse_vertical_b = " << mean_transverse_vertical_b << endl;
+        means_transverse_vertical_f.push_back(mean_transverse_vertical_f);
+//        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1) << ", and DetNo=" << 110000 + (i+1) * 100 + 50 + (j+1) << " mean_transverse_vertical_f = " << mean_transverse_vertical_f << endl;
+        means_transverse_horizental_b.push_back(mean_transverse_horizental_b);
+//        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << " mean_transverse_horizental_b = " << mean_transverse_horizental_b << endl;
+        means_transverse_horizental_f.push_back(mean_transverse_horizental_f);
+//        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1) << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << " mean_transverse_horizental_f = " << mean_transverse_horizental_f << endl;
+
+         double sum_longitudinal_b = std::accumulate(means_longitudinal_b.begin(), means_longitudinal_b.end(), 0.0);
+         mean_longitudinal_b_final = sum_longitudinal_b / means_longitudinal_b.size();
+
+         double sum_longitudinal_f = std::accumulate(means_longitudinal_f.begin(), means_longitudinal_f.end(), 0.0);
+         mean_longitudinal_f_final = sum_longitudinal_f / means_longitudinal_f.size();
+
+         double sq_sum_longitudinal_b = std::inner_product(means_longitudinal_b.begin(), means_longitudinal_b.end(), means_longitudinal_b.begin(), 0.0);
+         double variance_longitudinal_b = sq_sum_longitudinal_b / means_longitudinal_b.size() - mean_longitudinal_b_final * mean_longitudinal_b_final;
+
+         double sq_sum_longitudinal_f = std::inner_product(means_longitudinal_f.begin(), means_longitudinal_f.end(), means_longitudinal_f.begin(), 0.0);
+         double variance_longitudinal_f = sq_sum_longitudinal_f / means_longitudinal_f.size() - mean_longitudinal_f_final * mean_longitudinal_f_final;
+
+         standard_deviation_longitudinal_b = std::sqrt(variance_longitudinal_b);
+         standard_deviation_longitudinal_f = std::sqrt(variance_longitudinal_f);
+
+         double sum_transverse_vertical_b = std::accumulate(means_transverse_vertical_b.begin(), means_transverse_vertical_b.end(), 0.0);
+         mean_transverse_vertical_b_final = sum_transverse_vertical_b / means_transverse_vertical_b.size();
+
+         double sum_transverse_vertical_f = std::accumulate(means_transverse_vertical_f.begin(), means_transverse_vertical_f.end(), 0.0);
+         mean_transverse_vertical_f_final = sum_transverse_vertical_f / means_transverse_vertical_f.size();
+
+         double sq_sum_transverse_vertical_b = std::inner_product(means_transverse_vertical_b.begin(), means_transverse_vertical_b.end(), means_transverse_vertical_b.begin(), 0.0);
+         double variance_transverse_vertical_b = sq_sum_transverse_vertical_b / means_transverse_vertical_b.size() - mean_transverse_vertical_b_final * mean_transverse_vertical_b_final;
+
+         double sq_sum_transverse_vertical_f = std::inner_product(means_transverse_vertical_f.begin(), means_transverse_vertical_f.end(), means_transverse_vertical_f.begin(), 0.0);
+         double variance_transverse_vertical_f = sq_sum_transverse_vertical_f / means_transverse_vertical_f.size() - mean_transverse_vertical_f_final * mean_transverse_vertical_f_final;
+
+         standard_deviation_transverse_vertical_b = std::sqrt(variance_transverse_vertical_b);
+         standard_deviation_transverse_vertical_f = std::sqrt(variance_transverse_vertical_f);
+
+         double sum_transverse_horizental_b = std::accumulate(means_transverse_horizental_b.begin(), means_transverse_horizental_b.end(), 0.0);
+         mean_transverse_horizental_b_final = sum_transverse_horizental_b / means_transverse_horizental_b.size();
+
+         double sum_transverse_horizental_f = std::accumulate(means_transverse_horizental_f.begin(), means_transverse_horizental_f.end(), 0.0);
+         mean_transverse_horizental_f_final = sum_transverse_horizental_f / means_transverse_horizental_f.size();
+
+         double sq_sum_transverse_horizental_b = std::inner_product(means_transverse_horizental_b.begin(), means_transverse_horizental_b.end(), means_transverse_horizental_b.begin(), 0.0);
+         double variance_transverse_horizental_b = sq_sum_transverse_horizental_b / means_transverse_horizental_b.size() - mean_transverse_horizental_b_final * mean_transverse_horizental_b_final;
+
+         double sq_sum_transverse_horizental_f = std::inner_product(means_transverse_horizental_f.begin(), means_transverse_horizental_f.end(), means_transverse_horizental_f.begin(), 0.0);
+         double variance_transverse_horizental_f = sq_sum_transverse_horizental_f / means_transverse_horizental_f.size() - mean_transverse_horizental_f_final * mean_transverse_horizental_f_final;
+
+         standard_deviation_transverse_horizental_b = std::sqrt(variance_transverse_horizental_b);
+         standard_deviation_transverse_horizental_f = std::sqrt(variance_transverse_horizental_f);
+
+         delete asym_longitudinal_b_hist[k]; 
+         delete asym_longitudinal_f_hist[k]; 
+         delete asym_transverse_vertical_b_hist[k];
+         delete asym_transverse_vertical_f_hist[k];
+         delete asym_transverse_horizental_b_hist[k];
+         delete asym_transverse_horizental_f_hist[k];
+      }
+
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << ": mean_longitudinal_b = " << mean_longitudinal_b_final << "+/-" << standard_deviation_longitudinal_b/sqrt(10) << endl; 
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << ": mean_transverse_vertical_b = " << mean_transverse_vertical_b_final << "+/-" << standard_deviation_transverse_vertical_b/sqrt(10) << endl; 
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << 2*(i+1)-1 << ", and DetNo=" << 150000 + (i+1) * 100 + 50 + (j+1) << ": mean_transverse_horizental_b = " << mean_transverse_horizental_b_final << "+/-" << standard_deviation_transverse_horizental_b/sqrt(10) << endl; 
+
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << (2*(i+1)) << ", and DetNo=" << 110000 + (i+1) * 100 + 50 + (j+1) << ": mean_longitudinal_f =" << mean_longitudinal_f_final << "+/-" << standard_deviation_longitudinal_f/sqrt(10) << endl; 
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << (2*(i+1)) << ", and DetNo=" << 110000 + (i+1) * 100 + 50 + (j+1) << ": mean_transverse_vertical_f =" << mean_transverse_vertical_f_final << "+/-" << standard_deviation_transverse_vertical_f/sqrt(10) << endl; 
+        cout << "For i=" << i+1 << ",j=" << j+1 << ",SegNo=" << (2*(i+1)) << ", and DetNo=" << 110000 + (i+1) * 100 + 50 + (j+1) << ": mean_transverse_horizental_f = " << mean_transverse_horizental_f_final << "+/-" << standard_deviation_transverse_horizental_f/sqrt(10) << endl; 
+
+    }
+  }
+}
