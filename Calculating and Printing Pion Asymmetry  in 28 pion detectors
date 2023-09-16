@@ -1,0 +1,114 @@
+# Run using:home/elhamm/projects/def-wdconinc/elhamm/PionDetectorOptimization/simulation/run/remoll-Updated-July2023/run/remoll/build/reroot -l -q 'Pion_Asymmetry_PionDet_Chuncking.C("pion.root")'
+
+void Pion_Asymmetry_PionDet_Chunking(const TString& files) {
+  TChain* T = new TChain("T");
+  T->Add(files);
+  Double_t pi = 3.14159265358979323846;  
+  Double_t rate = 0;
+  std::vector<remollEventParticle_t>* parts = 0;
+  std::vector<remollGenericDetectorHit_t>* hits = 0;
+  std::vector<double> means_longitudinal;
+  std::vector<double> means_transverse_vertical;
+  std::vector<double> means_transverse_horizental;
+  remollEvent_t* ev=0;
+
+  T->SetBranchAddress("rate", &rate);
+  T->SetBranchAddress("hit", &hits);
+  T->SetBranchAddress("part", &parts);
+  T->SetBranchAddress("ev", &ev);
+
+  TH1F* asym_longitudinal_hist[11];
+  TH1F* asym_transverse_vertical_hist[11];
+  TH1F* asym_transverse_horizental_hist[11];
+
+  for (double ph = -pi-(pi/28); ph <= pi-(pi/28); ph += 2*pi/28) {
+
+   means_longitudinal.clear(); // Clear the vector at the start of each new phi iteration
+   means_transverse_vertical.clear(); 
+   means_transverse_horizental.clear(); 
+
+   double mean_longitudinal_final = 0.0;
+   double standard_deviation_longitudinal = 0.0;
+   double mean_transverse_vertical_final = 0.0;
+   double standard_deviation_transverse_vertical = 0.0;
+   double mean_transverse_horizental_final = 0.0;
+   double standard_deviation_transverse_horizental = 0.0;
+
+   for (size_t i = 0; i < 10; i++) {
+    asym_longitudinal_hist[i] = new TH1F(Form("asym_longitudinal_%zu", i), Form("asym_longitudinal_%zu", i), 400, 16000, 36000);
+    asym_longitudinal_hist[i]->Sumw2();
+    asym_transverse_vertical_hist[i] = new TH1F(Form("asym_transverse_vertical_%zu",i), Form("asym_transverse_vertical_%zu",i),3200,-80000,80000);
+    asym_transverse_vertical_hist[i]->Sumw2();
+    asym_transverse_horizental_hist[i] = new TH1F(Form("asym_transverse_horizental_%zu",i), Form("asym_transverse_horizental_%zu",i),3200,-80000,80000);
+    asym_transverse_horizental_hist[i]->Sumw2();
+
+      for (size_t iev = 0; iev <= T->GetEntries(); iev++) {
+         if (iev % 10 != i) continue;
+         T->GetEntry(iev);
+
+          double asym_longitudinal = ev->A;
+          double asym_transverse_vertical = ev->ATV;
+          double asym_transverse_horizental = ev->ATH;
+
+          for (size_t ihit = 0; ihit < hits->size(); ihit++) {
+            remollGenericDetectorHit_t hit = hits->at(ihit);
+
+            if (hit.ph > ph && hit.ph < ph+2*pi/28 && hit.det==8001) {
+              asym_longitudinal_hist[i]->Fill(asym_longitudinal,rate);
+              asym_transverse_vertical_hist[i]->Fill(asym_transverse_vertical,rate);
+              asym_transverse_horizental_hist[i]->Fill(asym_transverse_horizental,rate);
+             }
+           }
+         }
+         double mean_longitudinal = asym_longitudinal_hist[i]->GetMean();
+         double mean_transverse_vertical = asym_transverse_vertical_hist[i]->GetMean();
+         double mean_transverse_horizental = asym_transverse_horizental_hist[i]->GetMean();
+         means_longitudinal.push_back(mean_longitudinal);
+         cout << "phi=" << (ph+(ph+(2*pi/28)))/2 << " mean_longitudinal = " << mean_longitudinal << endl;
+         means_transverse_vertical.push_back(mean_transverse_vertical);
+//         cout << "phi=" << (ph+(ph+(2*pi/28)))/2 << "mean_transverse_vertical = " << mean_transverse_vertical << endl;
+         means_transverse_horizental.push_back(mean_transverse_horizental);
+//         cout << "mean_transverse_horizental = " << mean_transverse_horizental << endl;
+
+         //computes the sum of all elements in means_longitudinal from the beginning to the end of the vector
+         double sum_longitudinal = std::accumulate(means_longitudinal.begin(), means_longitudinal.end(), 0.0);
+
+         //computes the mean by dividing the sum of all elements by the number of elements in the vector
+         mean_longitudinal_final = sum_longitudinal / means_longitudinal.size();
+
+         //computes the variance
+         double sq_sum_longitudinal = std::inner_product(means_longitudinal.begin(), means_longitudinal.end(), means_longitudinal.begin(), 0.0);
+         double variance_longitudinal = sq_sum_longitudinal / means_longitudinal.size() - mean_longitudinal_final * mean_longitudinal_final;
+
+         //computes the standard deviation
+         standard_deviation_longitudinal = std::sqrt(variance_longitudinal);
+
+         double sum_transverse_vertical = std::accumulate(means_transverse_vertical.begin(), means_transverse_vertical.end(), 0.0);
+         mean_transverse_vertical_final = sum_transverse_vertical / means_transverse_vertical.size();
+
+         double sq_sum_transverse_vertical = std::inner_product(means_transverse_vertical.begin(), means_transverse_vertical.end(), means_transverse_vertical.begin(), 0.0);
+         double variance_transverse_vertical = sq_sum_transverse_vertical / means_transverse_vertical.size() - mean_transverse_vertical_final * mean_transverse_vertical_final;
+
+         standard_deviation_transverse_vertical = std::sqrt(variance_transverse_vertical);
+
+         double sum_transverse_horizental = std::accumulate(means_transverse_horizental.begin(), means_transverse_horizental.end(), 0.0);
+         mean_transverse_horizental_final = sum_transverse_horizental / means_transverse_horizental.size();
+
+         double sq_sum_transverse_horizental = std::inner_product(means_transverse_horizental.begin(), means_transverse_horizental.end(), means_transverse_horizental.begin(), 0.0);
+         double variance_transverse_horizental = sq_sum_transverse_horizental / means_transverse_horizental.size() - mean_transverse_horizental_final * mean_transverse_horizental_final;
+
+         standard_deviation_transverse_horizental = std::sqrt(variance_transverse_horizental);
+
+         delete asym_longitudinal_hist[i]; 
+         delete asym_transverse_vertical_hist[i];
+         delete asym_transverse_horizental_hist[i];
+        }
+
+     cout << "phi=" << (ph+(ph+(2*pi/28)))/2 << " mean_longitudinal_final = " << mean_longitudinal_final << "+/-" << standard_deviation_longitudinal/sqrt(10) << endl; 
+     cout << "phi=" << (ph+(ph+(2*pi/28)))/2 << " mean_transverse_vertical_final =" << mean_transverse_vertical_final << " +/-" << standard_deviation_transverse_vertical/sqrt(10) << endl; 
+     cout << "phi=" << (ph+(ph+(2*pi/28)))/2 << " mean_transverse_horizental_final =" << mean_transverse_horizental_final << " +/-" << standard_deviation_transverse_horizental/sqrt(10) << endl;
+   }
+}
+
+
+
